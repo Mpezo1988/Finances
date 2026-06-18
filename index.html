@@ -245,8 +245,8 @@ function getDefaults() {
       { name: 'Seacoast BP', value: 100 },
     ],
     properties: [
-      { name: '681 Ballard', mortgage: 206163, appraised: 330000, market: 410000, equity: 203837 },
-      { name: '275 Marion', mortgage: 529442, appraised: 563000, market: 575000, equity: 45558 },
+      { name: '681 Ballard', mortgage: 204680, appraised: 346959, market: 410000 },
+      { name: '275 Marion', mortgage: 528287, appraised: 563000, market: 575000 },
     ],
     spendingCategories: {
       Housing: ['275 Marion', '681 Ballard'],
@@ -354,8 +354,9 @@ function compute() {
   c.debtBalance = DATA.debt.reduce((s, d) => s + d.balance, 0);
   c.debtPayments = DATA.debt.reduce((s, d) => s + d.payment, 0);
   c.assetsTotal = DATA.assets.reduce((s, a) => s + a.value, 0);
-  c.totalMortgage = DATA.properties.reduce((s, p) => s + p.mortgage, 0);
-  c.totalMarket = DATA.properties.reduce((s, p) => s + p.market, 0);
+  DATA.properties.forEach(p => { p.equity = (Number(p.market) || 0) - (Number(p.mortgage) || 0); });
+  c.totalMortgage = DATA.properties.reduce((s, p) => s + (Number(p.mortgage) || 0), 0);
+  c.totalMarket = DATA.properties.reduce((s, p) => s + (Number(p.market) || 0), 0);
   c.totalEquity = DATA.properties.reduce((s, p) => s + p.equity, 0);
   const ballardMort = 1624, ballardRent = 2080;
   c.rentalLoss = Math.max(0, ballardMort - ballardRent * 0.75);
@@ -455,7 +456,7 @@ function render() {
   const ma=Math.max(...DATA.assets.map(a=>a.value));
   addCard(grid,'',`<div class="card-header"><div class="card-title"><div class="dot" style="background:#4ade80"></div>Financial Assets — Total: ${fmt(c.assetsTotal)}</div>${editBtn('assets')}</div><div class="bar-chart">${DATA.assets.map((a,i)=>`<div class="bar-row"><div class="bar-label">${a.name}</div><div class="bar-track"><div class="bar-fill" style="width:${Math.max(a.value/ma*100,3)}%;background:${palette[i%palette.length]}">${fmt(a.value)}</div></div></div>`).join('')}</div>`);
 
-  addCard(grid,'full-width',`<div class="card-header"><div class="card-title"><div class="dot" style="background:#38bdf8"></div>Real Estate — Market: ${fmt(c.totalMarket)}</div>${editBtn('properties')}</div><div class="property-grid">${DATA.properties.map((p,i)=>{const ep=(p.equity/p.market*100).toFixed(0),co=i===0?'#4ade80':'#38bdf8';return `<div class="property-card"><div class="property-name">${p.name}</div><div class="property-row"><span>Mortgage</span><span class="negative">${fmt(p.mortgage)}</span></div><div class="property-row"><span>Appraised</span><span>${fmt(p.appraised)}</span></div><div class="property-row"><span>Market Value</span><span>${fmt(p.market)}</span></div><div class="property-row"><span>Equity</span><span class="positive">${fmt(p.equity)} (${ep}%)</span></div><div class="equity-bar"><div class="equity-fill" style="width:${ep}%;background:${co}"></div></div></div>`;}).join('')}<div class="property-card" style="border-color:rgba(74,222,128,0.2)"><div class="property-name" style="color:#4ade80">Portfolio Summary</div><div class="property-row"><span>Total Mortgages</span><span class="negative">${fmt(c.totalMortgage)}</span></div><div class="property-row"><span>Total Market</span><span>${fmt(c.totalMarket)}</span></div><div class="property-row"><span>Total Equity</span><span class="positive">${fmt(c.totalEquity)}</span></div><div class="equity-bar"><div class="equity-fill" style="width:${(c.totalEquity/c.totalMarket*100).toFixed(0)}%;background:linear-gradient(90deg,#4ade80,#38bdf8)"></div></div></div></div>`);
+  addCard(grid,'full-width',`<div class="card-header"><div class="card-title"><div class="dot" style="background:#38bdf8"></div>Real Estate — Market: ${fmt(c.totalMarket)}</div>${editBtn('properties')}</div><div class="property-grid">${DATA.properties.map((p,i)=>{const ep=(p.equity/p.market*100).toFixed(0),co=i===0?'#4ade80':'#38bdf8';return `<div class="property-card"><div class="property-name">${p.name}</div><div class="property-row"><span>Mortgage</span><span class="negative">${fmt(p.mortgage)}</span></div><div class="property-row"><span>Appraised</span><span>${fmt(p.appraised)}</span></div><div class="property-row"><span>Market Value</span><span>${fmt(p.market)}</span></div><div class="property-row"><span>Equity</span><span class="positive">${fmt(p.equity)} (${ep}%)</span></div><div class="equity-bar"><div class="equity-fill" style="width:${ep}%;background:${co}"></div></div></div>`;}).join('')}<div class="property-card" style="border-color:rgba(74,222,128,0.2)"><div class="property-name" style="color:#4ade80">Portfolio Summary</div><div class="property-row"><span>Total Mortgages</span><span class="negative">${fmt(c.totalMortgage)}</span></div><div class="property-row"><span>Total Market</span><span>${fmt(c.totalMarket)}</span></div><div class="property-row"><span>Total Equity</span><span class="positive">${fmt(c.totalEquity)} (${c.totalMarket ? (c.totalEquity/c.totalMarket*100).toFixed(0) : 0}%)</span></div><div class="equity-bar"><div class="equity-fill" style="width:${(c.totalEquity/c.totalMarket*100).toFixed(0)}%;background:linear-gradient(90deg,#4ade80,#38bdf8)"></div></div></div></div>`);
 
   const mb=Math.max(...c.topBills.map(b=>b.value));
   addCard(grid,'full-width',`<div class="card-header"><div class="card-title"><div class="dot" style="background:#fbbf24"></div>Top Monthly Expenses — Total: ${fmtD(c.totalBills)}</div>${editBtn('bills')}</div><div class="bar-chart">${c.topBills.map((b,i)=>`<div class="bar-row"><div class="bar-label">${b.name}</div><div class="bar-track"><div class="bar-fill" style="width:${Math.max(b.value/mb*100,3)}%;background:${palette[i%palette.length]}">${fmt(b.value)}</div></div></div>`).join('')}</div>`);
@@ -481,7 +482,7 @@ function openEdit(section) {
   } else if (section === 'properties') {
     DATA.properties.forEach((p, idx) => {
       html += `<div class="edit-section-label">${p.name||'Property '+(idx+1)}</div>`;
-      ['name','mortgage','appraised','market','equity'].forEach(f => {
+      ['name','mortgage','appraised','market'].forEach(f => {
         html += `<div class="edit-row"><span style="flex:1;font-size:0.78rem;color:var(--text-muted);text-transform:capitalize">${f}</span><input class="edit-val" data-s="properties" data-i="${idx}" data-f="${f}" value="${p[f]}"/></div>`;
       });
     });
@@ -506,7 +507,7 @@ function editTable(label, key, fields, labels) {
 }
 
 function addRow(key) {
-  const t = {income:{name:'New',value:0},monthlyBills:{name:'New',value:0},mikePersonal:{name:'New',value:0},brennaPersonal:{name:'New',value:0},debt:{name:'New',balance:0,payment:0},assets:{name:'New',value:0},properties:{name:'New',mortgage:0,appraised:0,market:0,equity:0}};
+  const t = {income:{name:'New',value:0},monthlyBills:{name:'New',value:0},mikePersonal:{name:'New',value:0},brennaPersonal:{name:'New',value:0},debt:{name:'New',balance:0,payment:0},assets:{name:'New',value:0},properties:{name:'New',mortgage:0,appraised:0,market:0}};
   DATA[key].push({...t[key]});
   openEdit(currentEditSection);
 }
